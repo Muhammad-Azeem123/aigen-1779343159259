@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Calculator</title>
+    <!-- Google Fonts - Roboto for a clean, modern look -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS Variables for theming (Light Mode by default) */
+        :root {
+            --calculator-bg: linear-gradient(135deg, #e0e0e0, #f0f0f0);
+            --display-bg: #ffffff;
+            --display-text-primary: #333333;
+            --display-text-secondary: #666666;
+            --button-bg: #f0f0f0;
+            --button-text: #333333;
+            --button-hover-bg: #e0e0e0;
+            --operator-bg: #ff9500;
+            --operator-hover-bg: #ffad33;
+            --operator-text: #ffffff;
+            --clear-delete-bg: #d0d0d0;
+            --clear-delete-hover-bg: #c0c0c0;
+            --equals-bg: #007aff;
+            --equals-hover-bg: #3399ff;
+            --shadow: rgba(0, 0, 0, 0.2);
+        }
+
+        /* Dark Mode variables */
+        body.dark-mode {
+            --calculator-bg: linear-gradient(135deg, #2a2a2e, #1a1a1e);
+            --display-bg: #1e1e1e;
+            --display-text-primary: #e0e0e0;
+            --display-text-secondary: #a0a0a0;
+            --button-bg: #3c3c3e;
+            --button-text: #e0e0e0;
+            --button-hover-bg: #4e4e50;
+            --operator-bg: #e68a00; /* Slightly darker orange for contrast */
+            --operator-hover-bg: #ff9500;
+            --operator-text: #ffffff;
+            --clear-delete-bg: #707070;
+            --clear-delete-hover-bg: #808080;
+            --equals-bg: #005bb5; /* Slightly darker blue for contrast */
+            --equals-hover-bg: #007aff;
+            --shadow: rgba(0, 0, 0, 0.6);
+            background-color: #1a1a1e; /* Ensure body background changes too */
+        }
+
+        /* Base Styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0; /* Default light background for outside calculator */
+            transition: background-color 0.3s ease;
+        }
+
+        .calculator-container {
+            position: relative;
+            background: var(--calculator-bg);
+            border-radius: 25px;
+            box-shadow: 0 10px 30px var(--shadow);
+            max-width: 380px; /* Slightly wider for better button spacing */
+            width: 90vw; /* Responsive width */
+            padding: 20px;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* Dark Mode Toggle Button */
+        .dark-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 5px var(--shadow);
+            transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+            outline: none;
+            z-index: 10; /* Ensure it's above other elements if necessary */
+        }
+
+        .dark-mode-toggle:hover {
+            background-color: var(--button-hover-bg);
+        }
+
+        /* Calculator Grid Layout */
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* Four equal columns */
+            grid-template-rows: minmax(100px, auto) repeat(5, 70px); /* Display row and 5 button rows */
+            gap: 15px; /* Space between grid items */
+            padding-top: 50px; /* Space for the toggle button */
+        }
+
+        /* Output Display Styling */
+        .output {
+            grid-column: 1 / -1; /* Spans all four columns */
+            background-color: var(--display-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: space-around;
+            padding: 15px 20px;
+            word-wrap: break-word; /* Allows long numbers to wrap */
+            word-break: all; /* Breaks words if necessary */
+            border-radius: 15px;
+            min-height: 100px;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1); /* Inner shadow for depth */
+            transition: background-color 0.3s ease;
+        }
+
+        .output .previous-operand {
+            color: var(--display-text-secondary);
+            font-size: 1.2rem;
+            min-height: 1.2em; /* Ensure consistent height even when empty */
+            line-height: 1.2; /* Better readability */
+        }
+
+        .output .current-operand {
+            color: var(--display-text-primary);
+            font-size: 2.8rem; /* Larger font for current result */
+            min-height: 1.5em; /* Ensure consistent height */
+            line-height: 1.2;
+            font-weight: 500;
+        }
+
+        /* Button Styling */
+        .calculator-grid button {
+            cursor: pointer;
+            font-size: 1.8rem;
+            border: none;
+            outline: none;
+            border-radius: 15px;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            box-shadow: 0 5px 10px var(--shadow); /* Soft shadow for 3D effect */
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, color 0.2s ease;
+            font-weight: 500;
+        }
+
+        .calculator-grid button:hover {
+            background-color: var(--button-hover-bg);
+            transform: translateY(-2px); /* Slight lift effect */
+            box-shadow: 0 7px 15px var(--shadow);
+        }
+
+        .calculator-grid button:active {
+            transform: translateY(0); /* Returns to original position on click */
+            box-shadow: 0 3px 6px var(--shadow);
+        }
+
+        .calculator-grid .span-two {
+            grid-column: span 2; /* Button spans two columns */
+        }
+
+        /* Specific Button Color Schemes */
+        .calculator-grid button[data-all-clear],
+        .calculator-grid button[data-delete] {
+            background-color: var(--clear-delete-bg);
+            color: var(--button-text);
+        }
+
+        .calculator-grid button[data-all-clear]:hover,
+        .calculator-grid button[data-delete]:hover {
+            background-color: var(--clear-delete-hover-bg);
+        }
+
+        .calculator-grid button[data-operator] {
+            background-color: var(--operator-bg);
+            color: var(--operator-text);
+        }
+
+        .calculator-grid button[data-operator]:hover {
+            background-color: var(--operator-hover-bg);
+        }
+
+        .calculator-grid button[data-equals] {
+            background-color: var(--equals-bg);
+            color: var(--operator-text);
+        }
+
+        .calculator-grid button[data-equals]:hover {
+            background-color: var(--equals-hover-bg);
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 480px) {
+            .calculator-container {
+                padding: 15px;
+                border-radius: 20px;
+                width: 95vw;
+                max-width: unset; /* Remove max-width on very small screens */
+            }
+
+            .calculator-grid {
+                gap: 10px;
+                grid-template-rows: minmax(80px, auto) repeat(5, 60px); /* Smaller button height */
+                padding-top: 45px;
+            }
+
+            .dark-mode-toggle {
+                width: 35px;
+                height: 35px;
+                font-size: 1rem;
+                top: 15px;
+                right: 15px;
+            }
+
+            .output .current-operand {
+                font-size: 2.2rem; /* Adjust font sizes */
+            }
+
+            .output .previous-operand {
+                font-size: 0.9rem;
+            }
+
+            .calculator-grid button {
+                font-size: 1.4rem;
+                border-radius: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <!-- Dark Mode Toggle Button -->
+        <button class="dark-mode-toggle" id="darkModeToggle" aria-label="Toggle dark mode">🌙</button>
+
+        <div class="calculator-grid">
+            <!-- Calculator Display -->
+            <div class="output">
+                <div data-previous-operand class="previous-operand"></div>
+                <div data-current-operand class="current-operand">0</div>
+            </div>
+
+            <!-- Calculator Buttons -->
+            <button data-all-clear class="span-two">C</button>
+            <button data-delete>⌫</button>
+            <button data-operator>/</button>
+            <button data-number>7</button>
+            <button data-number>8</button>
+            <button data-number>9</button>
+            <button data-operator>*</button>
+            <button data-number>4</button>
+            <button data-number>5</button>
+            <button data-number>6</button>
+            <button data-operator>-</button>
+            <button data-number>1</button>
+            <button data-number>2</button>
+            <button data-number>3</button>
+            <button data-operator>+</button>
+            <button data-number class="span-two">0</button>
+            <button data-number>.</button>
+            <button data-equals>=</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Calculator Class handles all the logic for calculator operations and state management.
+         */
+        class Calculator {
+            constructor(previousOperandTextElement, currentOperandTextElement) {
+                this.previousOperandTextElement = previousOperandTextElement;
+                this.currentOperandTextElement = currentOperandTextElement;
+                this.clear(); // Initialize calculator state
+            }
+
+            /**
+             * Formats numbers for display, adding commas for thousands and handling decimals.
+             * @param {number|string} number - The number to format.
+             * @returns {string} The formatted number string.
+             */
+            formatDisplayNumber(number) {
+                const stringNumber = number.toString();
+                const integerDigits = parseFloat(stringNumber.split('.')[0]);
+                const decimalDigits = stringNumber.split('.')[1];
+                let integerDisplay;
+
+                if (isNaN(integerDigits)) {
+                    integerDisplay = ''; // No integer part
+                } else {
+                    // Use toLocaleString for comma separation on integers
+                    integerDisplay = integerDigits.toLocaleString('en', { maximumFractionDigits: 0 });
+                }
+
+                if (decimalDigits != null) {
+                    return `${integerDisplay}.${decimalDigits}`; // Re-attach decimal part if present
+                } else {
+                    return integerDisplay;
+                }
+            }
+
+            /**
+             * Resets all calculator state variables to their initial values.
+             */
+            clear() {
+                this.currentOperand = '0'; // Start with 0 on display
+                this.previousOperand = '';
+                this.operation = undefined;
+                this.shouldResetDisplay = false; // Flag to indicate if currentOperand should be cleared on next number input
+            }
+
+            /**
+             * Deletes the last character from the current operand.
+             * If the current operand becomes empty, sets it to '0'.
+             * Does nothing if in 'Error' state.
+             */
+            delete() {
+                if (this.currentOperand === 'Error') return; // Cannot delete from error state, needs full clear
+                if (this.currentOperand.length === 1 || this.currentOperand === '0') {
+                    this.currentOperand = '0';
+                } else {
+                    this.currentOperand = this.currentOperand.toString().slice(0, -1);
+                }
+                this.shouldResetDisplay = false; // Allow further appending after delete
+            }
+
+            /**
+             * Appends a number (digit or decimal point) to the current operand.
+             * Handles clearing the display after an operation/equals if `shouldResetDisplay` is true.
+             * Prevents multiple decimal points.
+             * @param {string} number - The digit or decimal point to append.
+             */
+            appendNumber(number) {
+                // If display needs to be reset (e.g., after an operation or equals), clear current operand first
+                if (this.shouldResetDisplay) {
+                    this.currentOperand = '';
+                    this.shouldResetDisplay = false;
+                }
+
+                if (this.currentOperand === 'Error') {
+                    this.currentOperand = ''; // Clear error message before appending
+                }
+
+                // Prevent multiple decimal points
+                if (number === '.' && this.currentOperand.includes('.')) return;
+
+                // Handle initial '0' - replace with number unless it's a decimal
+                if (this.currentOperand === '0' && number !== '.') {
+                    this.currentOperand = number.toString();
+                } else {
+                    this.currentOperand = this.currentOperand.toString() + number.toString();
+                }
+            }
+
+            /**
+             * Sets the chosen operation.
+             * If a previous operation exists and a current number is entered, computes the result first.
+             * Prepares `previousOperand` for the next calculation.
+             * @param {string} operation - The operator (+, -, *, /).
+             */
+            chooseOperation(operation) {
+                if (this.currentOperand === 'Error') {
+                    this.clear(); // If in error state, clear everything and start fresh
+                    this.updateDisplay(); // Update to show '0'
+                    return;
+                }
+                if (this.currentOperand === '') {
+                    // If no number has been entered, but an operation is pressed,
+                    // just update the operation if a previous operand exists
+                    if (this.previousOperand !== '') {
+                        this.operation = operation;
+                    }
+                    return;
+                }
+                
+                if (this.previousOperand !== '') {
+                    this.compute(); // Compute previous operation if a full expression exists
+                }
+                this.operation = operation;
+                this.previousOperand = this.currentOperand; // Move current number to previous operand
+                this.currentOperand = ''; // Clear current operand for next number input
+                this.shouldResetDisplay = true; // Flag to reset display for the next number
+            }
+
+            /**
+             * Performs the calculation based on the stored operation, previous operand, and current operand.
+             * Handles division by zero.
+             * Updates `currentOperand` with the result.
+             */
+            compute() {
+                let computation;
+                const prev = parseFloat(this.previousOperand);
+                const current = parseFloat(this.currentOperand);
+
+                // If either operand is invalid, do nothing
+                if (isNaN(prev) || isNaN(current)) return;
+
+                switch (this.operation) {
+                    case '+':
+                        computation = prev + current;
+                        break;
+                    case '-':
+                        computation = prev - current;
+                        break;
+                    case '*':
+                        computation = prev * current;
+                        break;
+                    case '/':
+                        if (current === 0) {
+                            this.currentOperand = 'Error'; // Handle division by zero
+                            this.previousOperand = '';
+                            this.operation = undefined;
+                            this.shouldResetDisplay = true;
+                            this.updateDisplay();
+                            return;
+                        }
+                        computation = prev / current;
+                        break;
+                    default:
+                        return; // No valid operation set
+                }
+                this.currentOperand = computation;
+                this.operation = undefined;
+                this.previousOperand = '';
+                this.shouldResetDisplay = true; // After equals, next number should clear current result
+            }
+
+            /**
+             * Updates the display elements (`previousOperandTextElement`, `currentOperandTextElement`)
+             * with the current state of the calculator.
+             */
+            updateDisplay() {
+                if (this.currentOperand === 'Error') {
+                    this.currentOperandTextElement.innerText = 'Error';
+                    this.previousOperandTextElement.innerText = '';
+                    return;
+                }
+                this.currentOperandTextElement.innerText = this.formatDisplayNumber(this.currentOperand);
+                if (this.operation != null && this.previousOperand !== '') {
+                    // Show previous operand and pending operation
+                    this.previousOperandTextElement.innerText =
+                        `${this.formatDisplayNumber(this.previousOperand)} ${this.operation}`;
+                } else {
+                    this.previousOperandTextElement.innerText = '';
+                }
+            }
+        }
+
+        // --- DOM Element Selection ---
+        const numberButtons = document.querySelectorAll('[data-number]');
+        const operatorButtons = document.querySelectorAll('[data-operator]');
+        const equalsButton = document.querySelector('[data-equals]');
+        const deleteButton = document.querySelector('[data-delete]');
+        const allClearButton = document.querySelector('[data-all-clear]');
+        const previousOperandTextElement = document.querySelector('[data-previous-operand]');
+        const currentOperandTextElement = document.querySelector('[data-current-operand]');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+
+        // --- Calculator Instance ---
+        const calculator = new Calculator(previousOperandTextElement, currentOperandTextElement);
+
+        // --- Event Listeners for Buttons ---
+        numberButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                calculator.appendNumber(button.innerText);
+                calculator.updateDisplay();
+            });
+        });
+
+        operatorButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                calculator.chooseOperation(button.innerText);
+                calculator.updateDisplay();
+            });
+        });
+
+        equalsButton.addEventListener('click', () => {
+            calculator.compute();
+            calculator.updateDisplay();
+        });
+
+        allClearButton.addEventListener('click', () => {
+            calculator.clear();
+            calculator.updateDisplay();
+        });
+
+        deleteButton.addEventListener('click', () => {
+            calculator.delete();
+            calculator.updateDisplay();
+        });
+
+        // --- Keyboard Input Support ---
+        window.addEventListener('keydown', e => {
+            if ((e.key >= '0' && e.key <= '9') || e.key === '.') {
+                calculator.appendNumber(e.key);
+                calculator.updateDisplay();
+            } else if (e.key === '+' || e.key === '-' || e.key === '*' || e.key === '/') {
+                calculator.chooseOperation(e.key);
+                calculator.updateDisplay();
+            } else if (e.key === 'Enter' || e.key === '=') {
+                e.preventDefault(); // Prevent default browser action for 'Enter' key (e.g., submitting form)
+                calculator.compute();
+                calculator.updateDisplay();
+            } else if (e.key === 'Backspace') {
+                calculator.delete();
+                calculator.updateDisplay();
+            } else if (e.key === 'Delete' || e.key === 'Escape') { // 'Delete' for clear, 'Escape' for full reset
+                calculator.clear();
+                calculator.updateDisplay();
+            }
+        });
+
+        // --- Dark Mode Toggle Functionality ---
+        darkModeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            darkModeToggle.innerText = isDarkMode ? '☀️' : '🌙'; // Change icon based on mode
+            // Store preference in localStorage (optional)
+            localStorage.setItem('darkMode', isDarkMode);
+        });
+
+        // Apply dark mode preference on load (optional)
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark-mode');
+                darkModeToggle.innerText = '☀️';
+            } else {
+                darkModeToggle.innerText = '🌙';
+            }
+            calculator.updateDisplay(); // Initial display update
+        });
+
+    </script>
+</body>
+</html>
